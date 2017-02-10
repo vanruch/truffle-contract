@@ -1,5 +1,7 @@
 # truffle-contract
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/trufflesuite/truffle-contract.svg)](https://greenkeeper.io/)
+
 Better Ethereum contract abstraction, for Node and the browser.
 
 ### Install
