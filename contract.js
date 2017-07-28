@@ -4,19 +4,6 @@ var Utils = require("./lib/utils.js");
 
 var contract = (function(module) {
 
-  // Planned for future features, logging, etc.
-  function Provider(provider) {
-    this.provider = provider;
-  }
-
-  Provider.prototype.send = function() {
-    return this.provider.send.apply(this.provider, arguments);
-  };
-
-  Provider.prototype.sendAsync = function() {
-    return this.provider.sendAsync.apply(this.provider, arguments);
-  };
-
   // Accepts a contract object created with web3.eth.contract.
   // Optionally, if called without `new`, accepts a network_id and will
   // create a new version of the contract abstraction with that network_id set.
@@ -80,8 +67,7 @@ var contract = (function(module) {
         throw new Error("Invalid provider passed to setProvider(); provider is " + provider);
       }
 
-      var wrapped = new Provider(provider);
-      this.web3.setProvider(wrapped);
+      this.web3.setProvider(provider);
       this.currentProvider = provider;
     },
 
