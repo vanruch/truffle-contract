@@ -1,13 +1,6 @@
 var BlockchainUtils = require("truffle-blockchain-utils");
-var Web3 = require("web3");
-
-var Utils = require('./lib/utils.js');
-
-// For browserified version. If browserify gave us an empty version,
-// look for the one provided by the user.
-if (typeof Web3 == "object" && Object.keys(Web3).length == 0) {
-  Web3 = global.Web3;
-}
+var Web3 = require("./lib/web3.js");
+var Utils = require("./lib/utils.js");
 
 var contract = (function(module) {
 
