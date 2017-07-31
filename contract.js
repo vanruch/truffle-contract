@@ -25,15 +25,15 @@ var contract = (function(module) {
       var item = this.abi[i];
       if (item.type == "function") {
         if (item.constant == true) {
-          this[item.name] = Utils.promisifyFunction(contract[item.name], constructor);
+          this[item.name] = Utils.promisifyFunction(contract[item.name], this, constructor);
         } else {
           this[item.name] = Utils.synchronizeFunction(contract[item.name], this, constructor);
         }
 
-        this[item.name].call = Utils.promisifyFunction(contract[item.name].call, constructor);
-        this[item.name].sendTransaction = Utils.promisifyFunction(contract[item.name].sendTransaction, constructor);
+        this[item.name].call = Utils.promisifyFunction(contract[item.name].call, this, constructor);
+        this[item.name].sendTransaction = Utils.promisifyFunction(contract[item.name].sendTransaction, this, constructor);
         this[item.name].request = contract[item.name].request;
-        this[item.name].estimateGas = Utils.promisifyFunction(contract[item.name].estimateGas, constructor);
+        this[item.name].estimateGas = Utils.promisifyFunction(contract[item.name].estimateGas, this, constructor);
       }
 
       if (item.type == "event") {
