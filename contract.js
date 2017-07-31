@@ -1,6 +1,6 @@
 var BlockchainUtils = require("truffle-blockchain-utils");
-var Web3 = require("./lib/web3.js");
-var Utils = require("./lib/utils.js");
+var Web3 = require("./lib/web3");
+var Utils = require("./lib/utils");
 
 var contract = (function(module) {
 
