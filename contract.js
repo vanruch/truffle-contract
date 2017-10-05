@@ -319,65 +319,91 @@ var contract = (function(module) {
       }
 
       var args = Array.prototype.slice.call(arguments);
+      var hashCallback;
 
       if (!this.unlinked_binary) {
         throw new Error(this._json.contract_name + " error: contract binary not set. Can't deploy new instance.");
       }
 
-      return self.detectNetwork().then(function(network_id) {
-        // After the network is set, check to make sure everything's ship shape.
-        var regex = /__[^_]+_+/g;
-        var unlinked_libraries = self.binary.match(regex);
+      var PromiseDecorator = function (promise) {
+        this.promise = promise;
+      };
 
-        if (unlinked_libraries != null) {
-          unlinked_libraries = unlinked_libraries.map(function(name) {
+      PromiseDecorator.prototype = Object.create(Promise.prototype);
+      PromiseDecorator.prototype.constructor = PromiseDecorator;
+
+      PromiseDecorator.prototype.then = function (callback) {
+        return this.promise.then(callback);
+      };
+
+      PromiseDecorator.prototype.catch = function (callback) {
+        return this.promise.catch(callback);
+      };
+
+      PromiseDecorator.prototype.withHash = function (callback) {
+        hashCallback = callback;
+        return this;
+      };
+
+      return new PromiseDecorator(
+        self.detectNetwork().then(function (network_id) {
+          // After the network is set, check to make sure everything's ship shape.
+          var regex = /__[^_]+_+/g;
+          var unlinked_libraries = self.binary.match(regex);
+
+          if (unlinked_libraries != null) {
+            unlinked_libraries = unlinked_libraries.map(function(name) {
             // Remove underscores
-            return name.replace(/_/g, "");
-          }).sort().filter(function(name, index, arr) {
-            // Remove duplicates
-            if (index + 1 >= arr.length) {
-              return true;
-            }
+              return name.replace(/_/g, "");
+            }).sort().filter(function(name, index, arr) {
+              // Remove duplicates
+              if (index + 1 >= arr.length) {
+                return true;
+              }
 
-            return name != arr[index + 1];
-          }).join(", ");
+                return name != arr[index + 1];
+              }).join(", ");
 
-          throw new Error(self.contract_name + " contains unresolved libraries. You must deploy and link the following libraries before you can deploy a new version of " + self._json.contract_name + ": " + unlinked_libraries);
-        }
-      }).then(function() {
-        return new Promise(function(accept, reject) {
-          var contract_class = self.web3.eth.contract(self.abi);
-          var tx_params = {};
-          var last_arg = args[args.length - 1];
-
-          // It's only tx_params if it's an object and not a BigNumber.
-          if (Utils.is_object(last_arg) && !Utils.is_big_number(last_arg)) {
-            tx_params = args.pop();
+              throw new Error(self.contract_name +
+                " contains unresolved libraries. You must deploy and link the following libraries before you can deploy a new version of " +
+                self._json.contract_name + ': ' + unlinked_libraries);
           }
+        }).then(function () {
+          return new Promise(function (accept, reject) {
+            var contract_class = self.web3.eth.contract(self.abi);
+            var tx_params = {};
+            var last_arg = args[args.length - 1];
 
-          tx_params = Utils.merge(self.class_defaults, tx_params);
-
-          if (tx_params.data == null) {
-            tx_params.data = self.binary;
-          }
-
-          // web3 0.9.0 and above calls new this callback twice.
-          // Why, I have no idea...
-          var intermediary = function(err, web3_instance) {
-            if (err != null) {
-              reject(err);
-              return;
+            // It's only tx_params if it's an object and not a BigNumber.
+            if (Utils.is_object(last_arg) && !Utils.is_big_number(last_arg)) {
+              tx_params = args.pop();
             }
 
-            if (err == null && web3_instance != null && web3_instance.address != null) {
-              accept(new self(web3_instance));
+            tx_params = Utils.merge(self.class_defaults, tx_params);
+
+            if (tx_params.data == null) {
+              tx_params.data = self.binary;
             }
-          };
+
+            var intermediary = function (err, web3_instance) {
+              if (err != null) {
+                reject(err);
+                return;
+              }
+
+              if (web3_instance && !(web3_instance.address) && hashCallback) {
+                hashCallback(web3_instance.transactionHash);
+              }
+
+              if (err == null && web3_instance != null && web3_instance.address != null) {
+                accept(new self(web3_instance));
+              }
+            };
 
           args.push(tx_params, intermediary);
           contract_class.new.apply(contract_class, args);
         });
-      });
+      }));
     },
 
     at: function(address) {
